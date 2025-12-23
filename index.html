@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>RGB Calendar Pro</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+*{box-sizing:border-box;font-family:Arial}
+body{
+  margin:0;min-height:100vh;background:#000;color:#fff;
+  display:flex;justify-content:center;align-items:center;
+}
+body::before{
+  content:"";position:fixed;width:200%;height:200%;
+  background:linear-gradient(60deg,red,orange,yellow,green,cyan,blue,violet);
+  animation:bg 10s linear infinite;z-index:-2;
+}
+@keyframes bg{0%{transform:translateX(0)}50%{transform:translateX(-50%)}100%{transform:translateX(0)}}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:-1}
+
+.app{
+  width:95%;max-width:900px;
+  background:#111;border-radius:20px;padding:20px;
+  box-shadow:0 0 25px cyan;
+}
+h1{
+  text-align:center;
+  background:linear-gradient(90deg,red,yellow,cyan,violet);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+}
+
+.controls{
+  display:flex;gap:10px;justify-content:center;margin:10px 0;
+}
+button{
+  padding:8px 15px;border:none;border-radius:20px;
+  background:linear-gradient(90deg,red,orange,yellow,green,cyan,blue,violet);
+  cursor:pointer;font-weight:bold;
+}
+
+.view{display:none}
+.view.active{display:block}
+
+/* grids */
+.grid7{display:grid;grid-template-columns:repeat(7,1fr);gap:8px}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+
+.box{
+  background:#1b1b1b;padding:10px;border-radius:10px;
+  text-align:center;cursor:pointer;
+}
+.box:hover{box-shadow:0 0 15px cyan}
+
+.tasks{margin-top:15px}
+input{padding:8px;border-radius:10px;border:none}
+ul{list-style:none;padding:0}
+li{
+  background:#222;padding:8px;margin:5px 0;border-radius:10px;
+  display:flex;justify-content:space-between
+}
+small{opacity:.7}
+</style>
+</head>
+
+<body>
+<div class="overlay"></div>
+
+<div class="app">
+<h1>📅 RGB Calendar Pro</h1>
+
+<div class="controls">
+  <button onclick="show('week')">Week</button>
+  <button onclick="show('year')">Year</button>
+  <button onclick="show('tasks')">Tasks</button>
+</div>
+
+<!-- WEEK VIEW -->
+<div id="week" class="view active">
+  <h3>This Week</h3>
+  <div class="grid7" id="weekGrid"></div>
+</div>
+
+<!-- YEAR VIEW -->
+<div id="year" class="view">
+  <h3>Year View</h3>
+  <div class="grid4" id="yearGrid"></div>
+</div>
+
+<!-- TASK VIEW -->
+<div id="tasks" class="view">
+  <h3 id="selected">Select a date</h3>
+  <input id="taskText" placeholder="Task">
+  <input type="time" id="taskTime">
+  <button onclick="addTask()">Add</button>
+  <ul id="taskList"></ul>
+</div>
+</div>
+
+<script>
+const weekGrid=document.getElementById("weekGrid");
+const yearGrid=document.getElementById("yearGrid");
+const taskList=document.getElementById("taskList");
+const selected=document.getElementById("selected");
+let selDate=null;
+
+// views
+function show(v){
+  document.querySelectorAll('.view').forEach(d=>d.classList.remove("active"));
+  document.getElementById(v).classList.add("active");
+}
+
+// storage
+const load=()=>JSON.parse(localStorage.getItem("tasks")||"{}");
+const save=d=>localStorage.setItem("tasks",JSON.stringify(d));
+
+// week view
+const today=new Date();
+const start=new Date(today);
+start.setDate(today.getDate()-today.getDay());
+for(let i=0;i<7;i++){
+  const d=new Date(start);d.setDate(start.getDate()+i);
+  const box=document.createElement("div");
+  box.className="box";
+  box.innerHTML=d.toDateString();
+  box.onclick=()=>{
+    selDate=d.toISOString().slice(0,10);
+    selected.innerText="Tasks for "+selDate;
+    show("tasks");render();
+  };
+  weekGrid.appendChild(box);
+}
+
+// year view
+const months=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+months.forEach((m,i)=>{
+  const box=document.createElement("div");
+  box.className="box";box.textContent=m;
+  box.onclick=()=>alert("Month: "+m);
+  yearGrid.appendChild(box);
+});
+
+// tasks
+function addTask(){
+  if(!selDate)return alert("Select a date");
+  const text=document.getElementById("taskText").value;
+  const time=document.getElementById("taskTime").value;
+  if(!text)return;
+  const d=load();
+  d[selDate]=d[selDate]||[];
+  d[selDate].push({text,time});
+  save(d);
+  document.getElementById("taskText").value="";
+  render();
+}
+function render(){
+  taskList.innerHTML="";
+  const d=load();
+  (d[selDate]||[]).forEach((t,i)=>{
+    const li=document.createElement("li");
+    li.innerHTML=`${t.text} <small>${t.time||""}</small>`;
+    li.onclick=()=>{d[selDate].splice(i,1);save(d);render()};
+    taskList.appendChild(li);
+  });
+}
+</script>
+</body>
+</html>
